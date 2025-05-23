@@ -43,7 +43,7 @@ app.use((req, res, next) => {
     await seedDatabase();
     log("Base de données initialisée avec succès");
   } catch (error) {
-    log("Erreur lors de l'initialisation de la base de données:", error);
+    log("Erreur lors de l'initialisation de la base de données:", String(error));
   }
 
   const server = await registerRoutes(app);
