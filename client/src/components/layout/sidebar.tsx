@@ -27,6 +27,7 @@ const navigation = [
   { name: 'Avancements', href: '/progress', icon: TrendingUp },
   { name: 'Performances', href: '/performance', icon: Settings },
   { name: 'Sécurité', href: '/safety', icon: Shield },
+  { name: 'Rapports', href: '/reports', icon: FileText },
   { name: 'Utilisateurs', href: '/users', icon: Users },
 ];
 
