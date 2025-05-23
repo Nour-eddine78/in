@@ -10,7 +10,8 @@ import {
   Shield, 
   Users, 
   LogOut,
-  Mountain
+  Mountain,
+  FileText
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';

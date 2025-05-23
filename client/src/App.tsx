@@ -17,6 +17,7 @@ import Progress from "@/pages/progress";
 import Performance from "@/pages/performance";
 import Safety from "@/pages/safety";
 import Users from "@/pages/users";
+import Reports from "@/pages/reports";
 import NotFound from "@/pages/not-found";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -110,6 +111,14 @@ function Router() {
         <ProtectedRoute>
           <AppLayout title="Gestion des Utilisateurs">
             <Users />
+          </AppLayout>
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/reports">
+        <ProtectedRoute>
+          <AppLayout title="Centre de Rapports">
+            <Reports />
           </AppLayout>
         </ProtectedRoute>
       </Route>
