@@ -1,5 +1,6 @@
 import { pgTable, text, serial, integer, boolean, timestamp, real, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
+import { relations } from "drizzle-orm";
 import { z } from "zod";
 
 // Users table
@@ -95,6 +96,48 @@ export const insertOperationSchema = createInsertSchema(operations).omit({ id: t
 export const insertProgressSchema = createInsertSchema(progress).omit({ id: true, updatedAt: true });
 export const insertSafetyIncidentSchema = createInsertSchema(safetyIncidents).omit({ id: true, reportedAt: true, resolvedAt: true });
 export const insertHseAuditSchema = createInsertSchema(hseAudits).omit({ id: true, auditDate: true });
+
+// Types
+// Relations
+export const usersRelations = relations(users, ({ many }) => ({
+  operations: many(operations),
+  reportedIncidents: many(safetyIncidents),
+  audits: many(hseAudits),
+}));
+
+export const machinesRelations = relations(machines, ({ many }) => ({
+  operations: many(operations),
+  incidents: many(safetyIncidents),
+}));
+
+export const operationsRelations = relations(operations, ({ one }) => ({
+  machine: one(machines, {
+    fields: [operations.machineId],
+    references: [machines.id],
+  }),
+  operator: one(users, {
+    fields: [operations.operatorId],
+    references: [users.id],
+  }),
+}));
+
+export const safetyIncidentsRelations = relations(safetyIncidents, ({ one }) => ({
+  reportedBy: one(users, {
+    fields: [safetyIncidents.reportedBy],
+    references: [users.id],
+  }),
+  machine: one(machines, {
+    fields: [safetyIncidents.machineId],
+    references: [machines.id],
+  }),
+}));
+
+export const hseAuditsRelations = relations(hseAudits, ({ one }) => ({
+  auditedBy: one(users, {
+    fields: [hseAudits.auditedBy],
+    references: [users.id],
+  }),
+}));
 
 // Types
 export type User = typeof users.$inferSelect;

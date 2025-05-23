@@ -1,9 +1,6 @@
-import { 
-  users, machines, operations, progress, safetyIncidents, hseAudits,
-  type User, type InsertUser, type Machine, type InsertMachine,
-  type Operation, type InsertOperation, type Progress, type InsertProgress,
-  type SafetyIncident, type InsertSafetyIncident, type HseAudit, type InsertHseAudit
-} from "@shared/schema";
+import { users, machines, operations, progress, safetyIncidents, hseAudits, type User, type InsertUser, type Machine, type InsertMachine, type Operation, type InsertOperation, type Progress, type InsertProgress, type SafetyIncident, type InsertSafetyIncident, type HseAudit, type InsertHseAudit } from "@shared/schema";
+import { db } from "./db";
+import { eq, and, gte, lte } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -44,279 +41,183 @@ export interface IStorage {
   createHseAudit(audit: InsertHseAudit): Promise<HseAudit>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private machines: Map<number, Machine>;
-  private operations: Map<number, Operation>;
-  private progress: Map<string, Progress>;
-  private safetyIncidents: Map<number, SafetyIncident>;
-  private hseAudits: Map<number, HseAudit>;
-  private currentId: number;
-
-  constructor() {
-    this.users = new Map();
-    this.machines = new Map();
-    this.operations = new Map();
-    this.progress = new Map();
-    this.safetyIncidents = new Map();
-    this.hseAudits = new Map();
-    this.currentId = 1;
-    this.initializeData();
-  }
-
-  private initializeData() {
-    // Initialize with default admin user
-    const adminUser: User = {
-      id: this.currentId++,
-      username: "admin",
-      password: "$2b$10$hash", // In real app, this would be properly hashed
-      role: "admin",
-      name: "Mohamed Alami",
-      email: "m.alami@ocp.ma",
-      team: "Équipe A",
-      isActive: true,
-      lastLogin: new Date(),
-      createdAt: new Date(),
-    };
-    this.users.set(adminUser.id, adminUser);
-
-    // Initialize machines
-    const defaultMachines: Machine[] = [
-      {
-        id: this.currentId++,
-        name: "D11",
-        type: "poussage",
-        specifications: { power: "850 HP", capacity: "35 m³" },
-        isActive: true,
-        createdAt: new Date(),
-      },
-      {
-        id: this.currentId++,
-        name: "750011",
-        type: "casement",
-        specifications: { power: "520 HP", reach: "12.8 m" },
-        isActive: true,
-        createdAt: new Date(),
-      },
-      {
-        id: this.currentId++,
-        name: "750012",
-        type: "casement",
-        specifications: { power: "520 HP", reach: "12.8 m" },
-        isActive: true,
-        createdAt: new Date(),
-      },
-      {
-        id: this.currentId++,
-        name: "Transwine",
-        type: "transport",
-        specifications: { capacity: "220 tonnes", maxSpeed: "65 km/h" },
-        isActive: true,
-        createdAt: new Date(),
-      },
-      {
-        id: this.currentId++,
-        name: "Procaneq",
-        type: "transport",
-        specifications: { capacity: "200 tonnes", maxSpeed: "60 km/h" },
-        isActive: true,
-        createdAt: new Date(),
-      },
-    ];
-
-    defaultMachines.forEach(machine => {
-      this.machines.set(machine.id, machine);
-    });
-  }
-
-  // Users methods
+export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(user => user.username === username);
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentId++;
-    const user: User = {
-      ...insertUser,
-      id,
-      isActive: true,
-      lastLogin: null,
-      createdAt: new Date(),
-    };
-    this.users.set(id, user);
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
     return user;
   }
 
   async updateUser(id: number, userUpdate: Partial<InsertUser>): Promise<User | undefined> {
-    const user = this.users.get(id);
-    if (!user) return undefined;
-    
-    const updatedUser = { ...user, ...userUpdate };
-    this.users.set(id, updatedUser);
-    return updatedUser;
+    const [user] = await db
+      .update(users)
+      .set(userUpdate)
+      .where(eq(users.id, id))
+      .returning();
+    return user || undefined;
   }
 
   async getAllUsers(): Promise<User[]> {
-    return Array.from(this.users.values());
+    return await db.select().from(users);
   }
 
   async updateLastLogin(id: number): Promise<void> {
-    const user = this.users.get(id);
-    if (user) {
-      user.lastLogin = new Date();
-      this.users.set(id, user);
-    }
+    await db
+      .update(users)
+      .set({ lastLogin: new Date() })
+      .where(eq(users.id, id));
   }
 
-  // Machines methods
   async getMachine(id: number): Promise<Machine | undefined> {
-    return this.machines.get(id);
+    const [machine] = await db.select().from(machines).where(eq(machines.id, id));
+    return machine || undefined;
   }
 
   async getAllMachines(): Promise<Machine[]> {
-    return Array.from(this.machines.values());
+    return await db.select().from(machines);
   }
 
   async getMachinesByType(type: string): Promise<Machine[]> {
-    return Array.from(this.machines.values()).filter(machine => machine.type === type);
+    return await db.select().from(machines).where(eq(machines.type, type));
   }
 
   async createMachine(insertMachine: InsertMachine): Promise<Machine> {
-    const id = this.currentId++;
-    const machine: Machine = {
-      ...insertMachine,
-      id,
-      isActive: true,
-      createdAt: new Date(),
-    };
-    this.machines.set(id, machine);
+    const [machine] = await db
+      .insert(machines)
+      .values(insertMachine)
+      .returning();
     return machine;
   }
 
-  // Operations methods
   async getOperation(id: number): Promise<Operation | undefined> {
-    return this.operations.get(id);
+    const [operation] = await db.select().from(operations).where(eq(operations.id, id));
+    return operation || undefined;
   }
 
   async getAllOperations(): Promise<Operation[]> {
-    return Array.from(this.operations.values()).sort((a, b) => 
-      new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
-    );
+    return await db.select().from(operations);
   }
 
   async getOperationsByDateRange(startDate: Date, endDate: Date): Promise<Operation[]> {
-    return Array.from(this.operations.values()).filter(operation => {
-      const opDate = new Date(operation.date);
-      return opDate >= startDate && opDate <= endDate;
-    });
+    return await db
+      .select()
+      .from(operations)
+      .where(and(
+        gte(operations.date, startDate),
+        lte(operations.date, endDate)
+      ));
   }
 
   async createOperation(insertOperation: InsertOperation): Promise<Operation> {
-    const id = this.currentId++;
-    const operation: Operation = {
-      ...insertOperation,
-      id,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    this.operations.set(id, operation);
+    const [operation] = await db
+      .insert(operations)
+      .values(insertOperation)
+      .returning();
     return operation;
   }
 
   async updateOperation(id: number, operationUpdate: Partial<InsertOperation>): Promise<Operation | undefined> {
-    const operation = this.operations.get(id);
-    if (!operation) return undefined;
-    
-    const updatedOperation = { ...operation, ...operationUpdate, updatedAt: new Date() };
-    this.operations.set(id, updatedOperation);
-    return updatedOperation;
+    const [operation] = await db
+      .update(operations)
+      .set(operationUpdate)
+      .where(eq(operations.id, id))
+      .returning();
+    return operation || undefined;
   }
 
-  // Progress methods
   async getProgress(panneau: string, tranche: string, niveau: string): Promise<Progress | undefined> {
-    const key = `${panneau}-${tranche}-${niveau}`;
-    return this.progress.get(key);
+    const [progressItem] = await db
+      .select()
+      .from(progress)
+      .where(and(
+        eq(progress.panneau, panneau),
+        eq(progress.tranche, tranche),
+        eq(progress.niveau, niveau)
+      ));
+    return progressItem || undefined;
   }
 
   async getAllProgress(): Promise<Progress[]> {
-    return Array.from(this.progress.values());
+    return await db.select().from(progress);
   }
 
   async createOrUpdateProgress(insertProgress: InsertProgress): Promise<Progress> {
-    const key = `${insertProgress.panneau}-${insertProgress.tranche}-${insertProgress.niveau}`;
-    const existingProgress = this.progress.get(key);
-    
-    const progress: Progress = {
-      ...insertProgress,
-      id: existingProgress?.id || this.currentId++,
-      updatedAt: new Date(),
-    };
-    
-    this.progress.set(key, progress);
-    return progress;
+    const existing = await this.getProgress(
+      insertProgress.panneau,
+      insertProgress.tranche,
+      insertProgress.niveau
+    );
+
+    if (existing) {
+      const [updated] = await db
+        .update(progress)
+        .set({ ...insertProgress, updatedAt: new Date() })
+        .where(eq(progress.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db
+        .insert(progress)
+        .values(insertProgress)
+        .returning();
+      return created;
+    }
   }
 
-  // Safety methods
   async getSafetyIncident(id: number): Promise<SafetyIncident | undefined> {
-    return this.safetyIncidents.get(id);
+    const [incident] = await db.select().from(safetyIncidents).where(eq(safetyIncidents.id, id));
+    return incident || undefined;
   }
 
   async getAllSafetyIncidents(): Promise<SafetyIncident[]> {
-    return Array.from(this.safetyIncidents.values()).sort((a, b) => 
-      new Date(b.reportedAt!).getTime() - new Date(a.reportedAt!).getTime()
-    );
+    return await db.select().from(safetyIncidents);
   }
 
   async createSafetyIncident(insertIncident: InsertSafetyIncident): Promise<SafetyIncident> {
-    const id = this.currentId++;
-    const incident: SafetyIncident = {
-      ...insertIncident,
-      id,
-      reportedAt: new Date(),
-      resolvedAt: null,
-    };
-    this.safetyIncidents.set(id, incident);
+    const [incident] = await db
+      .insert(safetyIncidents)
+      .values(insertIncident)
+      .returning();
     return incident;
   }
 
   async updateSafetyIncident(id: number, incidentUpdate: Partial<InsertSafetyIncident>): Promise<SafetyIncident | undefined> {
-    const incident = this.safetyIncidents.get(id);
-    if (!incident) return undefined;
-    
-    const updatedIncident = { ...incident, ...incidentUpdate };
-    if (incidentUpdate.status === 'resolved' && !incident.resolvedAt) {
-      updatedIncident.resolvedAt = new Date();
-    }
-    
-    this.safetyIncidents.set(id, updatedIncident);
-    return updatedIncident;
+    const [incident] = await db
+      .update(safetyIncidents)
+      .set(incidentUpdate)
+      .where(eq(safetyIncidents.id, id))
+      .returning();
+    return incident || undefined;
   }
 
-  // HSE Audits methods
   async getHseAudit(id: number): Promise<HseAudit | undefined> {
-    return this.hseAudits.get(id);
+    const [audit] = await db.select().from(hseAudits).where(eq(hseAudits.id, id));
+    return audit || undefined;
   }
 
   async getAllHseAudits(): Promise<HseAudit[]> {
-    return Array.from(this.hseAudits.values()).sort((a, b) => 
-      new Date(b.auditDate!).getTime() - new Date(a.auditDate!).getTime()
-    );
+    return await db.select().from(hseAudits);
   }
 
   async createHseAudit(insertAudit: InsertHseAudit): Promise<HseAudit> {
-    const id = this.currentId++;
-    const audit: HseAudit = {
-      ...insertAudit,
-      id,
-      auditDate: new Date(),
-    };
-    this.hseAudits.set(id, audit);
+    const [audit] = await db
+      .insert(hseAudits)
+      .values(insertAudit)
+      .returning();
     return audit;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
