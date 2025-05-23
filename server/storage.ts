@@ -1,159 +1,124 @@
-import { users, machines, operations, progress, safetyIncidents, hseAudits, type User, type InsertUser, type Machine, type InsertMachine, type Operation, type InsertOperation, type Progress, type InsertProgress, type SafetyIncident, type InsertSafetyIncident, type HseAudit, type InsertHseAudit } from "@shared/schema";
-import { db } from "./db";
-import { eq, and, gte, lte } from "drizzle-orm";
+import { User } from "./db";
+import mongoose from 'mongoose';
 
-export interface IStorage {
+export interface IStorage<T> {
   // Users
-  getUser(id: number): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
-  updateUser(id: number, user: Partial<InsertUser>): Promise<User | undefined>;
-  getAllUsers(): Promise<User[]>;
-  updateLastLogin(id: number): Promise<void>;
+  getUser(id: string): Promise<T | undefined>;
+  getUserByUsername(username: string): Promise<T | undefined>;
+  createUser(user: T): Promise<T>;
+  updateUser(id: string, user: Partial<T>): Promise<T | undefined>;
+  getAllUsers(): Promise<T[]>;
+  updateLastLogin(id: string): Promise<void>;
 
   // Machines
-  getMachine(id: number): Promise<Machine | undefined>;
-  getAllMachines(): Promise<Machine[]>;
-  getMachinesByType(type: string): Promise<Machine[]>;
-  createMachine(machine: InsertMachine): Promise<Machine>;
+  getMachine(id: string): Promise<T | undefined>;
+  getAllMachines(): Promise<T[]>;
+  getMachinesByType(type: string): Promise<T[]>;
+  createMachine(machine: T): Promise<T>;
 
   // Operations
-  getOperation(id: number): Promise<Operation | undefined>;
-  getAllOperations(): Promise<Operation[]>;
-  getOperationsByDateRange(startDate: Date, endDate: Date): Promise<Operation[]>;
-  createOperation(operation: InsertOperation): Promise<Operation>;
-  updateOperation(id: number, operation: Partial<InsertOperation>): Promise<Operation | undefined>;
+  getOperation(id: string): Promise<T | undefined>;
+  getAllOperations(): Promise<T[]>;
+  getOperationsByDateRange(startDate: Date, endDate: Date): Promise<T[]>;
+  createOperation(operation: T): Promise<T>;
+  updateOperation(id: string, operation: Partial<T>): Promise<T | undefined>;
 
   // Progress
-  getProgress(panneau: string, tranche: string, niveau: string): Promise<Progress | undefined>;
-  getAllProgress(): Promise<Progress[]>;
-  createOrUpdateProgress(progress: InsertProgress): Promise<Progress>;
+  getProgress(panneau: string, tranche: string, niveau: string): Promise<T | undefined>;
+  getAllProgress(): Promise<T[]>;
+  createOrUpdateProgress(progress: T): Promise<T>;
 
-  // Safety
-  getSafetyIncident(id: number): Promise<SafetyIncident | undefined>;
-  getAllSafetyIncidents(): Promise<SafetyIncident[]>;
-  createSafetyIncident(incident: InsertSafetyIncident): Promise<SafetyIncident>;
-  updateSafetyIncident(id: number, incident: Partial<InsertSafetyIncident>): Promise<SafetyIncident | undefined>;
+  // Safety Incidents
+  getSafetyIncident(id: string): Promise<T | undefined>;
+  getAllSafetyIncidents(): Promise<T[]>;
+  createSafetyIncident(incident: T): Promise<T>;
+  updateSafetyIncident(id: string, incident: Partial<T>): Promise<T | undefined>;
 
   // HSE Audits
-  getHseAudit(id: number): Promise<HseAudit | undefined>;
-  getAllHseAudits(): Promise<HseAudit[]>;
-  createHseAudit(audit: InsertHseAudit): Promise<HseAudit>;
+  getHseAudit(id: string): Promise<T | undefined>;
+  getAllHseAudits(): Promise<T[]>;
+  createHseAudit(audit: T): Promise<T>;
 }
 
 export class DatabaseStorage implements IStorage {
-  async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user || undefined;
+  async getUser(id: string): Promise<any | undefined> {
+    return await User.findById(id);
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user || undefined;
+  async getUserByUsername(username: string): Promise<any | undefined> {
+    return await User.findOne({ username });
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values(insertUser)
-      .returning();
-    return user;
+  async createUser(insertUser: any): Promise<any> {
+    const user = new User(insertUser);
+    return await user.save();
   }
 
-  async updateUser(id: number, userUpdate: Partial<InsertUser>): Promise<User | undefined> {
-    const [user] = await db
-      .update(users)
-      .set(userUpdate)
-      .where(eq(users.id, id))
-      .returning();
-    return user || undefined;
+  async updateUser(id: string, userUpdate: Partial<any>): Promise<any | undefined> {
+    return await User.findByIdAndUpdate(id, userUpdate, { new: true });
   }
 
-  async getAllUsers(): Promise<User[]> {
-    return await db.select().from(users);
+  async getAllUsers(): Promise<any[]> {
+    return await User.find();
   }
 
-  async updateLastLogin(id: number): Promise<void> {
-    await db
-      .update(users)
-      .set({ lastLogin: new Date() })
-      .where(eq(users.id, id));
+  async updateLastLogin(id: string): Promise<void> {
+    await User.findByIdAndUpdate(id, { lastLogin: new Date() });
   }
 
-  async getMachine(id: number): Promise<Machine | undefined> {
-    const [machine] = await db.select().from(machines).where(eq(machines.id, id));
-    return machine || undefined;
+  async getMachine(id: string): Promise<any | undefined> {
+    return await Machine.findById(id);
   }
 
-  async getAllMachines(): Promise<Machine[]> {
-    return await db.select().from(machines);
+  async getAllMachines(): Promise<any[]> {
+    return await Machine.find();
   }
 
-  async getMachinesByType(type: string): Promise<Machine[]> {
-    return await db.select().from(machines).where(eq(machines.type, type));
+  async getMachinesByType(type: string): Promise<any[]> {
+    return await Machine.find({ type });
   }
 
-  async createMachine(insertMachine: InsertMachine): Promise<Machine> {
-    const [machine] = await db
-      .insert(machines)
-      .values(insertMachine)
-      .returning();
-    return machine;
+  async createMachine(insertMachine: any): Promise<any> {
+    const machine = new Machine(insertMachine);
+    return await machine.save();
   }
 
-  async getOperation(id: number): Promise<Operation | undefined> {
-    const [operation] = await db.select().from(operations).where(eq(operations.id, id));
-    return operation || undefined;
+  async getOperation(id: string): Promise<any | undefined> {
+    return await Operation.findById(id);
   }
 
-  async getAllOperations(): Promise<Operation[]> {
-    return await db.select().from(operations);
+  async getAllOperations(): Promise<any[]> {
+    return await Operation.find();
   }
 
-  async getOperationsByDateRange(startDate: Date, endDate: Date): Promise<Operation[]> {
-    return await db
-      .select()
-      .from(operations)
-      .where(and(
-        gte(operations.date, startDate),
-        lte(operations.date, endDate)
-      ));
+  async getOperationsByDateRange(startDate: Date, endDate: Date): Promise<any[]> {
+    return await Operation.find({
+      date: { $gte: startDate, $lte: endDate }
+    });
   }
 
-  async createOperation(insertOperation: InsertOperation): Promise<Operation> {
-    const [operation] = await db
-      .insert(operations)
-      .values(insertOperation)
-      .returning();
-    return operation;
+  async createOperation(insertOperation: any): Promise<any> {
+    const operation = new Operation(insertOperation);
+    return await operation.save();
   }
 
-  async updateOperation(id: number, operationUpdate: Partial<InsertOperation>): Promise<Operation | undefined> {
-    const [operation] = await db
-      .update(operations)
-      .set(operationUpdate)
-      .where(eq(operations.id, id))
-      .returning();
-    return operation || undefined;
+  async updateOperation(id: string, operationUpdate: Partial<any>): Promise<any | undefined> {
+    return await Operation.findByIdAndUpdate(id, operationUpdate, { new: true });
   }
 
-  async getProgress(panneau: string, tranche: string, niveau: string): Promise<Progress | undefined> {
-    const [progressItem] = await db
-      .select()
-      .from(progress)
-      .where(and(
-        eq(progress.panneau, panneau),
-        eq(progress.tranche, tranche),
-        eq(progress.niveau, niveau)
-      ));
-    return progressItem || undefined;
+  async getProgress(panneau: string, tranche: string, niveau: string): Promise<any | undefined> {
+    return await Progress.findOne({
+      panneau,
+      tranche,
+      niveau
+    });
   }
 
-  async getAllProgress(): Promise<Progress[]> {
-    return await db.select().from(progress);
+  async getAllProgress(): Promise<any[]> {
+    return await Progress.find();
   }
 
-  async createOrUpdateProgress(insertProgress: InsertProgress): Promise<Progress> {
+  async createOrUpdateProgress(insertProgress: any): Promise<any> {
     const existing = await this.getProgress(
       insertProgress.panneau,
       insertProgress.tranche,
@@ -161,63 +126,123 @@ export class DatabaseStorage implements IStorage {
     );
 
     if (existing) {
-      const [updated] = await db
-        .update(progress)
-        .set({ ...insertProgress, updatedAt: new Date() })
-        .where(eq(progress.id, existing.id))
-        .returning();
-      return updated;
-    } else {
-      const [created] = await db
-        .insert(progress)
-        .values(insertProgress)
-        .returning();
-      return created;
+      return await Progress.findOneAndUpdate(
+        {
+          panneau: insertProgress.panneau,
+          tranche: insertProgress.tranche,
+          niveau: insertProgress.niveau
+        },
+        {
+          percentage: insertProgress.percentage,
+          lastUpdate: new Date(),
+          updatedAt: new Date()
+        },
+        { new: true }
+      );
     }
+
+    const progress = new Progress(insertProgress);
+    return await progress.save();
   }
 
-  async getSafetyIncident(id: number): Promise<SafetyIncident | undefined> {
-    const [incident] = await db.select().from(safetyIncidents).where(eq(safetyIncidents.id, id));
-    return incident || undefined;
+  async getSafetyIncident(id: string): Promise<any | undefined> {
+    return await SafetyIncident.findById(id);
   }
 
-  async getAllSafetyIncidents(): Promise<SafetyIncident[]> {
-    return await db.select().from(safetyIncidents);
+  async getAllSafetyIncidents(): Promise<any[]> {
+    return await SafetyIncident.find();
   }
 
-  async createSafetyIncident(insertIncident: InsertSafetyIncident): Promise<SafetyIncident> {
-    const [incident] = await db
-      .insert(safetyIncidents)
-      .values(insertIncident)
-      .returning();
-    return incident;
+  async createSafetyIncident(insertIncident: any): Promise<any> {
+    const incident = new SafetyIncident(insertIncident);
+    return await incident.save();
   }
 
-  async updateSafetyIncident(id: number, incidentUpdate: Partial<InsertSafetyIncident>): Promise<SafetyIncident | undefined> {
-    const [incident] = await db
-      .update(safetyIncidents)
-      .set(incidentUpdate)
-      .where(eq(safetyIncidents.id, id))
-      .returning();
-    return incident || undefined;
+  async updateSafetyIncident(id: string, incidentUpdate: Partial<any>): Promise<any | undefined> {
+    return await SafetyIncident.findByIdAndUpdate(id, incidentUpdate, { new: true });
   }
 
-  async getHseAudit(id: number): Promise<HseAudit | undefined> {
-    const [audit] = await db.select().from(hseAudits).where(eq(hseAudits.id, id));
-    return audit || undefined;
+  async getHseAudit(id: string): Promise<any | undefined> {
+    return await HseAudit.findById(id);
   }
 
-  async getAllHseAudits(): Promise<HseAudit[]> {
-    return await db.select().from(hseAudits);
+  async getAllHseAudits(): Promise<any[]> {
+    return await HseAudit.find();
   }
 
-  async createHseAudit(insertAudit: InsertHseAudit): Promise<HseAudit> {
-    const [audit] = await db
-      .insert(hseAudits)
-      .values(insertAudit)
-      .returning();
-    return audit;
+  async createHseAudit(insertAudit: any): Promise<any> {
+    const audit = new HseAudit(insertAudit);
+    return await audit.save();
   }
 }
 
 export const storage = new DatabaseStorage();
+
+// Schémas MongoDB
+const MachineSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  type: { type: String, required: true },
+  description: { type: String },
+  status: { type: String, required: true },
+  lastMaintenance: { type: Date },
+  team: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
+
+const Machine = mongoose.model('Machine', MachineSchema);
+
+const OperationSchema = new mongoose.Schema({
+  panneau: { type: String, required: true },
+  tranche: { type: String, required: true },
+  niveau: { type: String, required: true },
+  machine: { type: mongoose.Schema.Types.ObjectId, ref: 'Machine', required: true },
+  operator: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  date: { type: Date, required: true },
+  status: { type: String, required: true },
+  comments: { type: String },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
+
+const Operation = mongoose.model('Operation', OperationSchema);
+
+const ProgressSchema = new mongoose.Schema({
+  panneau: { type: String, required: true },
+  tranche: { type: String, required: true },
+  niveau: { type: String, required: true },
+  percentage: { type: Number, required: true },
+  lastUpdate: { type: Date, required: true },
+  team: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
+
+const Progress = mongoose.model('Progress', ProgressSchema);
+
+const SafetyIncidentSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  description: { type: String, required: true },
+  date: { type: Date, required: true },
+  severity: { type: String, required: true },
+  team: { type: String, required: true },
+  reportedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
+
+const SafetyIncident = mongoose.model('SafetyIncident', SafetyIncidentSchema);
+
+const HseAuditSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  date: { type: Date, required: true },
+  team: { type: String, required: true },
+  auditor: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  findings: { type: [String], required: true },
+  recommendations: { type: [String], required: true },
+  status: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
+
+const HseAudit = mongoose.model('HseAudit', HseAuditSchema);

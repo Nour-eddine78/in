@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { storage } from "./storage";
-import { insertUserSchema, insertOperationSchema, insertSafetyIncidentSchema, insertHseAuditSchema } from "@shared/schema";
+import { User } from "./db";
 
 const JWT_SECRET = process.env.JWT_SECRET || "ocp-decapage-secret-key";
 

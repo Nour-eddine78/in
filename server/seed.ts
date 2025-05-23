@@ -1,5 +1,4 @@
-import { db } from "./db";
-import { users, machines, operations, progress, safetyIncidents, hseAudits } from "@shared/schema";
+import { User } from "./db";
 import bcrypt from "bcrypt";
 
 export async function seedDatabase() {
@@ -7,7 +6,7 @@ export async function seedDatabase() {
 
   try {
     // Vérifier si des données existent déjà
-    const existingUsers = await db.select().from(users).limit(1);
+    const existingUsers = await User.find({});
     if (existingUsers.length > 0) {
       console.log("✅ Base de données déjà initialisée");
       return;
@@ -16,26 +15,26 @@ export async function seedDatabase() {
     // Créer l'utilisateur admin
     const hashedPassword = await bcrypt.hash("admin123", 10);
     
-    const [adminUser] = await db.insert(users).values({
+    const adminUser = await User.create({
       username: "admin",
+      email: "admin@example.com",
       password: hashedPassword,
       role: "admin",
       name: "Administrateur OCP",
-      email: "admin@ocp.ma",
       team: "Administration",
       isActive: true,
-    }).returning();
+    });
 
     // Créer un superviseur
-    const [supervisorUser] = await db.insert(users).values({
+    const supervisorUser = await User.create({
       username: "supervisor",
+      email: "supervisor@example.com",
       password: await bcrypt.hash("supervisor123", 10),
       role: "supervisor",
       name: "Mohamed Alami",
-      email: "m.alami@ocp.ma",
       team: "Équipe Décapage A",
       isActive: true,
-    }).returning();
+    });
 
     console.log("✅ Utilisateurs créés");
 

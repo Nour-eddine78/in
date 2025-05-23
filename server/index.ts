@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { seedDatabase } from "./seed";
+import { connectDB } from "./db";
 
 const app = express();
 app.use(express.json());
@@ -38,6 +39,15 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Connexion à MongoDB
+  try {
+    await connectDB();
+    log("Connexion à MongoDB établie avec succès");
+  } catch (error) {
+    log("Erreur lors de la connexion à MongoDB:", String(error));
+    process.exit(1);
+  }
+
   // Initialiser la base de données avec des données réelles
   try {
     await seedDatabase();
@@ -65,10 +75,7 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = 5000;
+  const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
   server.listen({
     port,
     host: "0.0.0.0",
