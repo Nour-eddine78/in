@@ -39,10 +39,11 @@ export async function seedDatabase() {
 
     console.log("✅ Utilisateurs créés");
 
-    // Créer les machines
+    // Créer les machines selon la liste dynamique fournie
     const machinesData = [
+      // Machines de Poussage
       {
-        name: "Bull D11R-001",
+        name: "D11",
         type: "poussage",
         specifications: {
           power: "850 CV",
@@ -51,18 +52,9 @@ export async function seedDatabase() {
           manufacturer: "Caterpillar"
         }
       },
+      // Machines de Casement
       {
-        name: "Bull D10T-002",
-        type: "poussage", 
-        specifications: {
-          power: "580 CV",
-          weight: "64 tonnes",
-          blade: "Semi-U de 5,9 m³",
-          manufacturer: "Caterpillar"
-        }
-      },
-      {
-        name: "Excavator 6040-003",
+        name: "750011",
         type: "casement",
         specifications: {
           power: "536 CV",
@@ -73,18 +65,63 @@ export async function seedDatabase() {
         }
       },
       {
-        name: "Excavator PC8000-004",
+        name: "750012",
+        type: "casement",
+        specifications: {
+          power: "536 CV",
+          weight: "400 tonnes",
+          bucket: "23 m³",
+          reach: "17,7 m",
+          manufacturer: "Liebherr"
+        }
+      },
+      {
+        name: "PH1",
         type: "casement",
         specifications: {
           power: "2x1175 CV",
-          weight: "800 tonnes", 
+          weight: "800 tonnes",
           bucket: "42 m³",
           reach: "20,5 m",
           manufacturer: "Komatsu"
         }
       },
       {
-        name: "Dumper 797F-005",
+        name: "PH2",
+        type: "casement",
+        specifications: {
+          power: "2x1175 CV",
+          weight: "800 tonnes",
+          bucket: "42 m³",
+          reach: "20,5 m",
+          manufacturer: "Komatsu"
+        }
+      },
+      {
+        name: "200B1",
+        type: "casement",
+        specifications: {
+          power: "1450 CV",
+          weight: "200 tonnes",
+          bucket: "12 m³",
+          reach: "14,2 m",
+          manufacturer: "Hitachi"
+        }
+      },
+      {
+        name: "Libhere",
+        type: "casement",
+        specifications: {
+          power: "700 CV",
+          weight: "450 tonnes",
+          bucket: "25 m³",
+          reach: "18,5 m",
+          manufacturer: "Liebherr"
+        }
+      },
+      // Machines de Transport
+      {
+        name: "Transwine",
         type: "transport",
         specifications: {
           power: "4000 CV",
@@ -94,7 +131,7 @@ export async function seedDatabase() {
         }
       },
       {
-        name: "Dumper 830E-006",
+        name: "Procaneq",
         type: "transport",
         specifications: {
           power: "3500 CV",
