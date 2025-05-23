@@ -38,6 +38,14 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Initialiser la base de données avec des données réelles
+  try {
+    await seedDatabase();
+    log("Base de données initialisée avec succès");
+  } catch (error) {
+    log("Erreur lors de l'initialisation de la base de données:", error);
+  }
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
